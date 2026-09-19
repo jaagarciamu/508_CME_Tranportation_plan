@@ -1,0 +1,270 @@
+:root {
+  --report-ink: #1f2933;
+  --report-muted: #52606d;
+  --report-accent: #235789;
+  --report-border: #cbd5df;
+  --report-code-bg: #f4f6f8;
+  --report-table-stripe: #f7f9fb;
+}
+
+html {
+  font-size: 16px;
+}
+
+body {
+  margin: 0;
+  color: var(--report-ink);
+  background: #eef1f4;
+  font-family: var(--report-body-font-family);
+  line-height: var(--report-line-height);
+}
+
+main.jp-Notebook {
+  box-sizing: border-box;
+  width: min(8.5in, calc(100% - 2rem));
+  min-height: 11in;
+  margin: 1.5rem auto;
+  padding: var(--report-margin-top) var(--report-margin-right)
+    var(--report-margin-bottom) var(--report-margin-left);
+  background: #ffffff;
+  box-shadow: 0 4px 18px rgb(31 41 51 / 12%);
+}
+
+.jp-Cell {
+  margin: 0 0 0.8rem;
+}
+
+.jp-CodeCell {
+  break-inside: avoid-page;
+  page-break-inside: avoid;
+}
+
+.jp-MarkdownOutput {
+  color: var(--report-ink);
+  font-family: var(--report-body-font-family);
+  font-size: var(--report-body-font-size);
+  line-height: var(--report-line-height);
+}
+
+.jp-MarkdownOutput h1,
+.jp-MarkdownOutput h2,
+.jp-MarkdownOutput h3,
+.jp-MarkdownOutput h4 {
+  color: var(--report-ink);
+  font-family: var(--report-heading-font-family);
+  font-weight: 650;
+  break-after: avoid-page;
+  page-break-after: avoid;
+}
+
+.jp-MarkdownOutput h1 {
+  margin: 0 0 0.18in;
+  color: var(--report-accent);
+  font-size: var(--report-h1-font-size);
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+}
+
+.jp-MarkdownOutput h2 {
+  margin: 0.28in 0 0.1in;
+  padding-bottom: 0.04in;
+  border-bottom: 1px solid var(--report-border);
+  font-size: var(--report-h2-font-size);
+  line-height: 1.25;
+}
+
+.jp-MarkdownOutput h3 {
+  margin: 0.2in 0 0.06in;
+  font-size: var(--report-h3-font-size);
+  line-height: 1.3;
+}
+
+.jp-MarkdownOutput h4 {
+  margin: 0.15in 0 0.04in;
+  font-size: var(--report-h4-font-size);
+  line-height: 1.3;
+}
+
+.jp-MarkdownOutput p,
+.jp-MarkdownOutput ol,
+.jp-MarkdownOutput ul {
+  margin-top: 0.05in;
+  margin-bottom: 0.11in;
+}
+
+.jp-MarkdownOutput p {
+  text-align: var(--report-body-text-align);
+  text-justify: inter-word;
+  hyphens: var(--report-body-hyphens);
+}
+
+.jp-MarkdownOutput figcaption,
+.jp-MarkdownOutput .figure-caption,
+.jp-MarkdownOutput .table-caption,
+.jp-MarkdownOutput p.caption,
+.jp-RenderedHTMLCommon caption {
+  text-align: var(--report-caption-text-align);
+  text-justify: auto;
+  hyphens: manual;
+}
+
+.jp-MarkdownOutput code {
+  padding: 0.05em 0.25em;
+  border-radius: 3px;
+  background: var(--report-code-bg);
+  color: #243b53;
+}
+
+.jp-InputPrompt,
+.jp-OutputPrompt,
+.jp-Collapser {
+  display: none !important;
+}
+
+.jp-InputArea,
+.jp-OutputArea-output {
+  margin-left: 0 !important;
+}
+
+.jp-CodeCell .jp-InputArea {
+  margin: 0.08in 0 0.12in;
+  border: 1px solid #d8dee6;
+  border-radius: 5px;
+  background: var(--report-code-bg);
+  break-inside: avoid-page;
+  page-break-inside: avoid;
+}
+
+.jp-CodeCell .cm-editor,
+.jp-CodeCell .highlight,
+.jp-CodeCell .highlight pre,
+.jp-CodeCell .jp-InputArea pre,
+.jp-CodeCell .jp-InputArea code,
+.jp-RenderedText,
+.jp-RenderedText pre,
+.jp-OutputArea-output pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-family: var(--report-code-font-family) !important;
+  font-size: var(--report-code-font-size) !important;
+  line-height: var(--report-code-line-height) !important;
+}
+
+.jp-OutputArea-child {
+  margin: 0.06in 0 0.13in;
+  break-inside: avoid-page;
+  page-break-inside: avoid;
+}
+
+.jp-RenderedHTMLCommon,
+.jp-OutputArea-output {
+  overflow: visible !important;
+}
+
+.jp-RenderedHTMLCommon table {
+  width: auto;
+  max-width: 100%;
+  margin: 0.08in 0 0.16in;
+  border-collapse: collapse;
+  color: var(--report-ink);
+  font-size: var(--report-table-font-size);
+  break-inside: avoid-page;
+  page-break-inside: avoid;
+}
+
+.jp-RenderedHTMLCommon thead {
+  display: table-header-group;
+}
+
+.jp-RenderedHTMLCommon th,
+.jp-RenderedHTMLCommon td {
+  padding: var(--report-table-padding-y) var(--report-table-padding-x);
+  border: var(--report-table-border-width) solid var(--report-border);
+  text-align: right;
+  vertical-align: top;
+}
+
+.jp-RenderedHTMLCommon th {
+  background: #e8eef4;
+  color: #102a43;
+  font-weight: 650;
+}
+
+.jp-RenderedHTMLCommon tbody tr:nth-child(even) {
+  background: var(--report-table-stripe);
+}
+
+.jp-RenderedHTMLCommon table.dataframe:has(tr > :nth-child(12)) {
+  width: 100%;
+  table-layout: fixed;
+  font-size: var(--report-wide-table-font-size);
+}
+
+.jp-RenderedHTMLCommon table.dataframe:has(tr > :nth-child(12)) th,
+.jp-RenderedHTMLCommon table.dataframe:has(tr > :nth-child(12)) td {
+  padding: calc(var(--report-table-padding-y) * 0.6)
+    calc(var(--report-table-padding-x) * 0.45);
+  overflow-wrap: anywhere;
+}
+
+.jp-RenderedHTMLCommon img,
+.jp-OutputArea-output img,
+.jp-RenderedHTMLCommon svg {
+  display: block;
+  width: auto;
+  max-width: min(100%, var(--report-figure-max-width));
+  max-height: var(--report-figure-max-height);
+  height: auto;
+  object-fit: contain;
+  margin: 0.12in auto;
+  break-inside: avoid-page;
+  page-break-inside: avoid;
+}
+
+.jp-OutputArea-output pre {
+  max-width: 100%;
+  margin: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  color: var(--report-ink);
+  font-family: var(--report-code-font-family) !important;
+  font-size: var(--report-code-font-size) !important;
+  line-height: var(--report-code-line-height) !important;
+}
+
+.MathJax,
+.MathJax_Display,
+mjx-container {
+  font-size: var(--report-math-font-size) !important;
+}
+
+@media print {
+  html,
+  body {
+    background: #ffffff !important;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+
+  main.jp-Notebook {
+    width: auto;
+    min-height: auto;
+    margin: 0;
+    padding: 0;
+    box-shadow: none;
+  }
+
+  a {
+    color: inherit;
+    text-decoration: none;
+  }
+}
+
+@media screen and (max-width: 760px) {
+  main.jp-Notebook {
+    width: 100%;
+    margin: 0;
+    padding: 1.1rem;
+    box-shadow: none;
+  }
+}

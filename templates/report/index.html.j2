@@ -1,0 +1,11 @@
+{% extends 'lab/index.html.j2' %}
+
+{% block html_head_css %}
+{{ super() }}
+<style>
+{% include 'report.css' %}
+</style>
+<style id="report-style-settings">
+{{ resources.report_style_css | safe }}
+</style>
+{% endblock html_head_css %}
