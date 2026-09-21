@@ -30,8 +30,10 @@ main.jp-Notebook {
   box-shadow: 0 4px 18px rgb(31 41 51 / 12%);
 }
 
-.jp-Cell {
-  margin: 0 0 0.8rem;
+.jp-Notebook > .jp-Cell {
+  padding-top: 0;
+  padding-bottom: 0;
+  margin: var(--report-cell-space-before) 0 var(--report-cell-space-after);
 }
 
 .jp-CodeCell {
@@ -58,7 +60,7 @@ main.jp-Notebook {
 }
 
 .jp-MarkdownOutput h1 {
-  margin: 0 0 0.18in;
+  margin: var(--report-h1-space-before) 0 var(--report-h1-space-after);
   color: var(--report-accent);
   font-size: var(--report-h1-font-size);
   line-height: 1.15;
@@ -66,7 +68,7 @@ main.jp-Notebook {
 }
 
 .jp-MarkdownOutput h2 {
-  margin: 0.28in 0 0.1in;
+  margin: var(--report-h2-space-before) 0 var(--report-h2-space-after);
   padding-bottom: 0.04in;
   border-bottom: 1px solid var(--report-border);
   font-size: var(--report-h2-font-size);
@@ -74,13 +76,13 @@ main.jp-Notebook {
 }
 
 .jp-MarkdownOutput h3 {
-  margin: 0.2in 0 0.06in;
+  margin: var(--report-h3-space-before) 0 var(--report-h3-space-after);
   font-size: var(--report-h3-font-size);
   line-height: 1.3;
 }
 
 .jp-MarkdownOutput h4 {
-  margin: 0.15in 0 0.04in;
+  margin: var(--report-h4-space-before) 0 var(--report-h4-space-after);
   font-size: var(--report-h4-font-size);
   line-height: 1.3;
 }
@@ -88,8 +90,8 @@ main.jp-Notebook {
 .jp-MarkdownOutput p,
 .jp-MarkdownOutput ol,
 .jp-MarkdownOutput ul {
-  margin-top: 0.05in;
-  margin-bottom: 0.11in;
+  margin-top: var(--report-paragraph-space-before);
+  margin-bottom: var(--report-paragraph-space-after);
 }
 
 .jp-MarkdownOutput p {
@@ -127,7 +129,7 @@ main.jp-Notebook {
 }
 
 .jp-CodeCell .jp-InputArea {
-  margin: 0.08in 0 0.12in;
+  margin: var(--report-code-space-before) 0 var(--report-code-space-after);
   border: 1px solid #d8dee6;
   border-radius: 5px;
   background: var(--report-code-bg);
@@ -151,7 +153,7 @@ main.jp-Notebook {
 }
 
 .jp-OutputArea-child {
-  margin: 0.06in 0 0.13in;
+  margin: var(--report-output-space-before) 0 var(--report-output-space-after);
   break-inside: avoid-page;
   page-break-inside: avoid;
 }
@@ -164,7 +166,7 @@ main.jp-Notebook {
 .jp-RenderedHTMLCommon table {
   width: auto;
   max-width: 100%;
-  margin: 0.08in 0 0.16in;
+  margin: var(--report-table-space-before) 0 var(--report-table-space-after);
   border-collapse: collapse;
   color: var(--report-ink);
   font-size: var(--report-table-font-size);
@@ -216,7 +218,7 @@ main.jp-Notebook {
   max-height: var(--report-figure-max-height);
   height: auto;
   object-fit: contain;
-  margin: 0.12in auto;
+  margin: var(--report-figure-space-before) auto var(--report-figure-space-after);
   break-inside: avoid-page;
   page-break-inside: avoid;
 }
@@ -267,4 +269,55 @@ mjx-container {
     padding: 1.1rem;
     box-shadow: none;
   }
+}
+
+/* Remove inherited wrapper spacing; element spacing is set above. */
+.jp-MarkdownCell .jp-MarkdownOutput {
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
+.jp-MarkdownOutput > :first-child:not(h1):not(h2):not(h3):not(h4) {
+  margin-top: 0;
+}
+
+.jp-MarkdownOutput > :last-child {
+  margin-bottom: 0;
+}
+
+.jp-MarkdownOutput hr {
+  margin-top: var(--report-separator-space-before);
+  margin-bottom: var(--report-separator-space-after);
+}
+
+/* Let ReportStyle own spacing instead of the inherited Jupyter wrappers. */
+.jp-Notebook .jp-CodeCell .jp-Cell-outputWrapper {
+  margin-top: 0;
+}
+
+.jp-Notebook .jp-CodeCell .jp-InputArea-editor,
+.jp-Notebook .jp-CodeCell .cm-editor,
+.jp-Notebook .jp-CodeCell .highlight {
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
+.jp-Notebook .jp-CodeCell .cm-editor.cm-s-jupyter .highlight pre {
+  margin: 0;
+  padding: var(--report-code-padding-vertical)
+    var(--report-code-padding-horizontal);
+}
+
+.jp-Notebook .jp-OutputArea .jp-RenderedText,
+.jp-Notebook .jp-OutputArea .jp-RenderedHTMLCommon {
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
+/* Household correlation only: physical export width, independent of image DPI.
+   Keep this cell ID when editing the notebook; change 11cm to resize this plot. */
+.jp-Notebook .jp-CodeCell[id="cell-id=ebbe5bd3"] .jp-OutputArea-output img {
+  width: 11cm;
+  max-width: 100%;
+  height: auto;
 }

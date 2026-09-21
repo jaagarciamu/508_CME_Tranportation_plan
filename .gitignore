@@ -7,3 +7,5 @@ __pycache__/
 # Generated outputs
 outputs/figures/*
 outputs/tables/*
+tmp/
+tmp/

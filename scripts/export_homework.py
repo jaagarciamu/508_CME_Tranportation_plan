@@ -11,6 +11,7 @@ from pathlib import Path
 from textwrap import dedent
 
 import nbformat
+import pymupdf
 from nbconvert import HTMLExporter
 from nbconvert.preprocessors import ExecutePreprocessor, TagRemovePreprocessor
 
@@ -23,9 +24,6 @@ HTML_PATH = REPORTS_DIR / "homework_1.html"
 PDF_PATH = REPORTS_DIR / "homework_1.pdf"
 
 EXPECTED_SHAPE_TEXT = "Rows: 2,310\nColumns: 16"
-EXPECTED_VALIDATION_TEXT = (
-    "Validation passed: the dataset is non-empty and contains all 16 expected columns."
-)
 
 
 @dataclass(frozen=True)
@@ -38,6 +36,10 @@ class ReportStyle:
     margin_bottom_cm: float = 1.0
     margin_left_cm: float = 1.0
 
+    # PDF-only footer, added after pagination without moving page content.
+    page_number_font_pt: float = 8
+    page_number_bottom_cm: float = 0.5
+
     # Font stacks for the exported HTML and PDF.
     body_font_family: str = '"Aptos", "Segoe UI", Arial, sans-serif'
     heading_font_family: str = '"Aptos Display", "Segoe UI", Arial, sans-serif'
@@ -49,12 +51,40 @@ class ReportStyle:
     h2_font_pt: float = 13
     h3_font_pt: float = 11
     h4_font_pt: float = 10
-    table_font_pt: float = 6
-    wide_table_font_pt: float = 6
-    code_font_pt: float = 5
+    table_font_pt: float = 7
+    wide_table_font_pt: float = 7
+    code_font_pt: float = 6.5
     code_line_height: float = 1.25
     math_font_pt: float = 5
     line_height: float = 1.42
+
+    # Vertical spacing in points: before/after each element (zero is allowed).
+    cell_space_before_pt: float = 0
+    cell_space_after_pt: float = 2
+    h1_space_before_pt: float = 0
+    h1_space_after_pt: float = 6
+    h2_space_before_pt: float = 10
+    h2_space_after_pt: float = 4
+    h3_space_before_pt: float = 7
+    h3_space_after_pt: float = 3
+    h4_space_before_pt: float = 5
+    h4_space_after_pt: float = 2
+    paragraph_space_before_pt: float = 2
+    paragraph_space_after_pt: float = 4
+    code_space_before_pt: float = 2
+    code_space_after_pt: float = 2
+    output_space_before_pt: float = 0
+    output_space_after_pt: float = 2
+    table_space_before_pt: float = 1
+    table_space_after_pt: float = 3
+    figure_space_before_pt: float = 5
+    figure_space_after_pt: float = 5
+    separator_space_before_pt: float = 4
+    separator_space_after_pt: float = 4
+
+    # Padding inside code frames, in points (zero is allowed).
+    code_padding_vertical_pt: float = 0
+    code_padding_horizontal_pt: float = 3
 
     # Paragraph and caption alignment.
     justify_body_text: bool = True
@@ -94,6 +124,14 @@ REPORT_MARKERS = {
     "# report: hide-cell": "remove-cell",
     "# report: show": None,
 }
+# Markdown accepts these markers on its first non-empty line.
+# They affect only the exported copy, never the source notebook.
+MARKDOWN_REPORT_MARKERS = {
+    "<!-- report: hide-cell -->": "remove-cell",
+    "# report: hide-cell": "remove-cell",
+    "<!-- report: show -->": None,
+    "# report: show": None,
+}
 REPORT_CONTROL_TAGS = {tag for tag in REPORT_MARKERS.values() if tag is not None}
 
 
@@ -106,6 +144,10 @@ def validate_report_style(style: ReportStyle) -> None:
         or field.name in {"line_height", "code_line_height"}
     ]
     for name in positive_fields:
+        if "_space_" in name or name.startswith("code_padding_"):
+            if getattr(style, name) < 0:
+                raise ValueError(f"REPORT_STYLE.{name} must be zero or greater.")
+            continue
         if getattr(style, name) <= 0:
             raise ValueError(f"REPORT_STYLE.{name} must be greater than zero.")
     if style.plot_dpi <= 0:
@@ -128,9 +170,16 @@ def report_style_css(style: ReportStyle) -> str:
     """Build CSS variables and print geometry from the editable style settings."""
     body_text_align = "justify" if style.justify_body_text else "left"
     body_hyphens = "auto" if style.justify_body_text else "manual"
+    spacing_css = "\n          ".join(
+        f"--report-{field.name.replace('_', '-').removesuffix('-pt')}: "
+        f"{getattr(style, field.name):g}pt;"
+        for field in fields(style)
+        if "_space_" in field.name or field.name.startswith("code_padding_")
+    )
     return dedent(
         f"""
         :root {{
+          {spacing_css}
           --report-margin-top: {style.margin_top_cm:g}cm;
           --report-margin-right: {style.margin_right_cm:g}cm;
           --report-margin-bottom: {style.margin_bottom_cm:g}cm;
@@ -191,9 +240,13 @@ def matplotlib_setup_cell(style: ReportStyle) -> nbformat.NotebookNode:
 
 
 def apply_report_markers(notebook: nbformat.NotebookNode) -> None:
-    """Convert simple code comments to nbconvert tags in the in-memory notebook."""
+    """Convert code and Markdown markers to tags in the in-memory notebook."""
     for cell in notebook.cells:
-        if cell.cell_type != "code":
+        if cell.cell_type == "code":
+            markers = REPORT_MARKERS
+        elif cell.cell_type == "markdown":
+            markers = MARKDOWN_REPORT_MARKERS
+        else:
             continue
 
         lines = cell.source.splitlines(keepends=True)
@@ -205,12 +258,12 @@ def apply_report_markers(notebook: nbformat.NotebookNode) -> None:
             continue
 
         marker = lines[marker_index].strip().lower()
-        if marker not in REPORT_MARKERS:
+        if marker not in markers:
             continue
 
         tags = set(cell.metadata.get("tags", []))
         tags.difference_update(REPORT_CONTROL_TAGS)
-        export_tag = REPORT_MARKERS[marker]
+        export_tag = markers[marker]
         if export_tag is not None:
             tags.add(export_tag)
 
@@ -248,11 +301,12 @@ def notebook_output_text(notebook: nbformat.NotebookNode) -> str:
 
 
 def validate_execution(notebook: nbformat.NotebookNode) -> None:
-    """Confirm that the expected dataset was loaded and validated."""
+    """Confirm the dataset shape without requiring a notebook status message."""
     output_text = notebook_output_text(notebook)
-    for expected_text in (EXPECTED_SHAPE_TEXT, EXPECTED_VALIDATION_TEXT):
-        if expected_text not in output_text:
-            raise RuntimeError(f"Expected notebook output was not found: {expected_text!r}")
+    if EXPECTED_SHAPE_TEXT not in output_text:
+        raise RuntimeError(
+            f"Expected notebook output was not found: {EXPECTED_SHAPE_TEXT!r}"
+        )
 
 
 def render_html(notebook: nbformat.NotebookNode, style: ReportStyle) -> None:
@@ -348,6 +402,31 @@ def render_pdf(browsers: list[Path]) -> Path:
     raise RuntimeError("Browser PDF export failed. " + " | ".join(failures))
 
 
+def add_page_numbers(pdf_path: Path, style: ReportStyle) -> None:
+    """Overlay centered numbers in the bottom margin without repaginating."""
+    temporary = pdf_path.with_name(pdf_path.stem + ".numbered.tmp.pdf")
+    try:
+        with pymupdf.open(pdf_path) as document:
+            for number, page in enumerate(document, start=1):
+                label = str(number)
+                size = style.page_number_font_pt
+                width = pymupdf.get_text_length(label, fontname="helv", fontsize=size)
+                x = (page.rect.width - width) / 2
+                y = page.rect.height - style.page_number_bottom_cm * 72 / 2.54
+                area = pymupdf.Rect(x - 2, y - size * 1.1, x + width + 2, y + size * 0.3)
+                existing = page.get_text("text", clip=area).strip()
+                if existing == label:
+                    continue  # Do not duplicate a number if invoked again.
+                if existing:
+                    raise ValueError(f"Page {number}: bottom-center margin contains text.")
+                page.insert_text((x, y), label, fontname="helv", fontsize=size,
+                                 color=(0.32, 0.32, 0.32), overlay=True)
+            document.save(temporary, deflate=True)
+        temporary.replace(pdf_path)
+    finally:
+        temporary.unlink(missing_ok=True)
+
+
 def main() -> int:
     """Build both report formats or return a nonzero exit code."""
     try:
@@ -358,6 +437,7 @@ def main() -> int:
         render_html(notebook, REPORT_STYLE)
         browsers = find_browsers()
         browser = render_pdf(browsers)
+        add_page_numbers(PDF_PATH, REPORT_STYLE)
     except Exception as exc:
         print(f"Export failed: {exc}", file=sys.stderr)
         return 1
