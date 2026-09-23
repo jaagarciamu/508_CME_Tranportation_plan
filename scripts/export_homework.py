@@ -1,7 +1,8 @@
-"""Execute Homework 1 and export a styled HTML report and US Letter PDF."""
+"""Execute a selected notebook and export a styled HTML report and US Letter PDF."""
 
 from __future__ import annotations
 
+import argparse
 import shutil
 import subprocess
 import sys
@@ -20,8 +21,6 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 NOTEBOOK_PATH = PROJECT_ROOT / "notebooks" / "homework_1.ipynb"
 TEMPLATE_ROOT = PROJECT_ROOT / "templates"
 REPORTS_DIR = PROJECT_ROOT / "reports"
-HTML_PATH = REPORTS_DIR / "homework_1.html"
-PDF_PATH = REPORTS_DIR / "homework_1.pdf"
 
 EXPECTED_SHAPE_TEXT = "Rows: 2,310\nColumns: 16"
 
@@ -276,9 +275,9 @@ def apply_report_markers(notebook: nbformat.NotebookNode) -> None:
         cell.source = "".join(lines)
 
 
-def execute_notebook(style: ReportStyle) -> nbformat.NotebookNode:
+def execute_notebook(style: ReportStyle, notebook_path: Path) -> nbformat.NotebookNode:
     """Execute the source notebook in memory and return the fresh result."""
-    with NOTEBOOK_PATH.open(encoding="utf-8") as stream:
+    with notebook_path.open(encoding="utf-8") as stream:
         notebook = nbformat.read(stream, as_version=4)
 
     apply_report_markers(notebook)
@@ -309,7 +308,9 @@ def validate_execution(notebook: nbformat.NotebookNode) -> None:
         )
 
 
-def render_html(notebook: nbformat.NotebookNode, style: ReportStyle) -> None:
+def render_html(
+    notebook: nbformat.NotebookNode, style: ReportStyle, html_path: Path, title: str
+) -> None:
     """Render the executed notebook with the report template and cell tags."""
     exporter = HTMLExporter(
         template_name="report",
@@ -327,11 +328,11 @@ def render_html(notebook: nbformat.NotebookNode, style: ReportStyle) -> None:
     body, _ = exporter.from_notebook_node(
         notebook,
         resources={
-            "metadata": {"name": "Homework 1 Trip Generation"},
+            "metadata": {"name": title},
             "report_style_css": report_style_css(style),
         },
     )
-    HTML_PATH.write_text(body, encoding="utf-8")
+    html_path.write_text(body, encoding="utf-8")
 
 
 def find_browsers() -> list[Path]:
@@ -356,19 +357,19 @@ def find_browsers() -> list[Path]:
     return browsers
 
 
-def render_pdf(browsers: list[Path]) -> Path:
+def render_pdf(browsers: list[Path], html_path: Path, pdf_path: Path) -> Path:
     """Print the HTML to PDF, falling back to the next available browser."""
     failures: list[str] = []
     for index, browser in enumerate(browsers):
-        if PDF_PATH.exists():
+        if pdf_path.exists():
             for attempt in range(40):
                 try:
-                    PDF_PATH.unlink()
+                    pdf_path.unlink()
                     break
                 except PermissionError:
                     if attempt == 39:
                         raise RuntimeError(
-                            f"Close any program using {PDF_PATH.name} and run the export again."
+                            f"Close any program using {pdf_path.name} and run the export again."
                         )
                     time.sleep(0.25)
 
@@ -386,13 +387,13 @@ def render_pdf(browsers: list[Path]) -> Path:
             "--no-pdf-header-footer",
             "--run-all-compositor-stages-before-draw",
             "--virtual-time-budget=2000",
-            f"--print-to-pdf={PDF_PATH}",
-            HTML_PATH.resolve().as_uri(),
+            f"--print-to-pdf={pdf_path}",
+            html_path.resolve().as_uri(),
         ]
         completed = subprocess.run(command, check=False, capture_output=True, text=True)
         if completed.returncode == 0:
             for _ in range(50):
-                if PDF_PATH.is_file() and PDF_PATH.stat().st_size > 0:
+                if pdf_path.is_file() and pdf_path.stat().st_size > 0:
                     return browser
                 time.sleep(0.1)
 
@@ -429,21 +430,35 @@ def add_page_numbers(pdf_path: Path, style: ReportStyle) -> None:
 
 def main() -> int:
     """Build both report formats or return a nonzero exit code."""
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "notebook", nargs="?", type=Path, default=NOTEBOOK_PATH,
+        help="Path to an .ipynb file (default: notebooks/homework_1.ipynb).",
+    )
+    args = parser.parse_args()
+    notebook_path = args.notebook.expanduser().resolve()
+    if notebook_path.suffix.lower() != ".ipynb" or not notebook_path.is_file():
+        parser.error(f"Notebook must be an existing .ipynb file: {notebook_path}")
+    html_path = REPORTS_DIR / f"{notebook_path.stem}.html"
+    pdf_path = REPORTS_DIR / f"{notebook_path.stem}.pdf"
+    title = notebook_path.stem.replace("_", " ")
     try:
         validate_report_style(REPORT_STYLE)
         REPORTS_DIR.mkdir(parents=True, exist_ok=True)
-        notebook = execute_notebook(REPORT_STYLE)
-        validate_execution(notebook)
-        render_html(notebook, REPORT_STYLE)
+        notebook = execute_notebook(REPORT_STYLE, notebook_path)
+        if notebook_path == NOTEBOOK_PATH.resolve():
+            validate_execution(notebook)
+            title = "Homework 1 Trip Generation"
+        render_html(notebook, REPORT_STYLE, html_path, title)
         browsers = find_browsers()
-        browser = render_pdf(browsers)
-        add_page_numbers(PDF_PATH, REPORT_STYLE)
+        browser = render_pdf(browsers, html_path, pdf_path)
+        add_page_numbers(pdf_path, REPORT_STYLE)
     except Exception as exc:
         print(f"Export failed: {exc}", file=sys.stderr)
         return 1
 
-    print(f"HTML report: {HTML_PATH.relative_to(PROJECT_ROOT)}")
-    print(f"PDF report:  {PDF_PATH.relative_to(PROJECT_ROOT)}")
+    print(f"HTML report: {html_path.relative_to(PROJECT_ROOT)}")
+    print(f"PDF report:  {pdf_path.relative_to(PROJECT_ROOT)}")
     print(f"Browser:     {browser}")
     return 0
 
