@@ -45,7 +45,7 @@ class ReportStyle:
     code_font_family: str = '"Cascadia Mono", Consolas, monospace'
 
     # Typography in points.
-    body_font_pt: float = 8
+    body_font_pt: float = 7
     h1_font_pt: float = 16
     h2_font_pt: float = 13
     h3_font_pt: float = 11
